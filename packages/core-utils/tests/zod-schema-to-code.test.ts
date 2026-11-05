@@ -131,6 +131,59 @@ describe("zodSchemaToCode", () => {
     expect(zodSchema.safeParse(undefined).success).toBe(false);
   });
 
+  it("should generate z.null() for an explicit null type", () => {
+    const schema: SchemaObject = { type: "null" };
+
+    const result = zodSchemaToCode(schema);
+
+    expect(result.code).toBe("z.null()");
+  });
+
+  it.each([
+    ["oneOf", "exclusiveUnion"],
+    ["anyOf", "z.union"],
+  ] as const)(
+    "should preserve the null branch of %s with a schema reference",
+    (composition, unionFunction) => {
+      const schema: SchemaObject = {
+        [composition]: [{ $ref: "#/components/schemas/Qux" }, { type: "null" }],
+      };
+
+      const result = zodSchemaToCode(schema);
+
+      expect(result.imports).toEqual(new Set(["Qux"]));
+      expect(result.code).toBe(`${unionFunction}([Qux, z.null()])`);
+    },
+  );
+
+  it("should preserve required string and nullable properties alongside a nullable oneOf reference", () => {
+    const schemas: Record<string, SchemaObject> = {
+      Qux: { type: "string" },
+      Foo: {
+        type: "object",
+        required: ["bar", "baz", "qux"],
+        properties: {
+          bar: { type: "string" },
+          baz: { type: ["string", "null"] },
+          qux: {
+            oneOf: [{ $ref: "#/components/schemas/Qux" }, { type: "null" }],
+          },
+        },
+      },
+    };
+
+    const result = zodSchemaToCode(schemas.Foo, {
+      resolvedSchemas: schemas,
+    });
+
+    expect(result.imports).toEqual(new Set(["Qux"]));
+    expect(result.helpers).toEqual(new Set(["exclusiveUnion"]));
+    expect(result.code).toContain('"bar": z.string()');
+    expect(result.code).toContain('"baz": (z.string()).nullable()');
+    expect(result.code).not.toContain(".optional()");
+    expect(result.code).toContain('"qux": exclusiveUnion([Qux, z.null()])');
+  });
+
   it("should apply null defaults after nullable wrapping", () => {
     const schema = {
       default: null,
