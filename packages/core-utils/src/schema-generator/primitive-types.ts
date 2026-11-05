@@ -100,6 +100,11 @@ export function handleBooleanType(
   return result;
 }
 
+export function handleNullType(result: ZodSchemaResult): ZodSchemaResult {
+  result.code = "z.null()";
+  return result;
+}
+
 /**
  * Handle number/integer type conversion
  */

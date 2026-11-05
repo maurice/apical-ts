@@ -9,6 +9,7 @@ type EffectiveType =
   | "array"
   | "boolean"
   | "integer"
+  | "null"
   | "number"
   | "object"
   | "string"

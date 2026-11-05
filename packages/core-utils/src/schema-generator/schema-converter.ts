@@ -15,6 +15,7 @@ import { handleObjectType } from "./object-types.js";
 import {
   handleArrayType,
   handleBooleanType,
+  handleNullType,
   handleNumberType,
   handleStringType,
 } from "./primitive-types.js";
@@ -293,6 +294,7 @@ function handlePrimitive(
     return handleNumberType(schema, result);
   }
   if (effectiveType === "boolean") return handleBooleanType(schema, result);
+  if (effectiveType === "null") return handleNullType(result);
   if (effectiveType === "array") {
     return handleArrayType(schema, result, zodSchemaToCode, {
       currentSchemaName,
